@@ -1,0 +1,62 @@
+const BASE = '/api';
+
+function getToken() {
+  return localStorage.getItem('tk_token');
+}
+
+async function request(method, path, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = getToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  if (res.status === 401) {
+    localStorage.removeItem('tk_token');
+    window.location.href = '/login';
+    return;
+  }
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+export const api = {
+  // Auth
+  login: (username, password) => request('POST', '/auth/login', { username, password }),
+  me: () => request('GET', '/auth/me'),
+
+  // Clients
+  getClients: () => request('GET', '/clients'),
+  createClient: (name) => request('POST', '/clients', { name }),
+  updateClient: (id, data) => request('PUT', `/clients/${id}`, data),
+  deleteClient: (id) => request('DELETE', `/clients/${id}`),
+
+  // Projects
+  getProjects: (client_id) => request('GET', `/projects${client_id ? `?client_id=${client_id}` : ''}`),
+  createProject: (client_id, name) => request('POST', '/projects', { client_id, name }),
+  updateProject: (id, data) => request('PUT', `/projects/${id}`, data),
+  deleteProject: (id) => request('DELETE', `/projects/${id}`),
+
+  // Time entries
+  getTimeEntries: (date, user_id) => {
+    const params = new URLSearchParams();
+    if (date) params.set('date', date);
+    if (user_id) params.set('user_id', user_id);
+    return request('GET', `/time-entries?${params}`);
+  },
+  createTimeEntry: (data) => request('POST', '/time-entries', data),
+  updateTimeEntry: (id, data) => request('PUT', `/time-entries/${id}`, data),
+  deleteTimeEntry: (id) => request('DELETE', `/time-entries/${id}`),
+
+  // Reports
+  getSummary: (params) => request('GET', `/reports/summary?${new URLSearchParams(params)}`),
+  exportCsvUrl: (params) => `${BASE}/reports/export/csv?${new URLSearchParams(params)}&token=${getToken()}`,
+  exportExcelUrl: (params) => `${BASE}/reports/export/excel?${new URLSearchParams(params)}&token=${getToken()}`,
+  exportPrintUrl: (params) => `${BASE}/reports/export/print?${new URLSearchParams(params)}&token=${getToken()}`,
+};
