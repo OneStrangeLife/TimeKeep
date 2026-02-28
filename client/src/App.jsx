@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard.jsx';
 import Setup from './pages/Setup.jsx';
 import Reports from './pages/Reports.jsx';
 import About from './pages/About.jsx';
+import Links from './pages/Links.jsx';
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
@@ -26,6 +27,7 @@ function AppRoutes() {
           <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
           <Route path="/setup" element={<RequireAuth><Setup /></RequireAuth>} />
           <Route path="/reports" element={<RequireAuth><Reports /></RequireAuth>} />
+          <Route path="/links" element={<RequireAuth><Links /></RequireAuth>} />
           <Route path="/about" element={<RequireAuth><About /></RequireAuth>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

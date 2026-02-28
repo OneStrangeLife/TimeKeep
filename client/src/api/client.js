@@ -64,6 +64,12 @@ export const api = {
   updatePayPeriod: (id, data) => request('PUT', `/pay-periods/${id}`, data),
   deletePayPeriod: (id) => request('DELETE', `/pay-periods/${id}`),
 
+  // Links
+  getLinks: () => request('GET', '/links'),
+  createLink: (data) => request('POST', '/links', data),
+  updateLink: (id, data) => request('PUT', `/links/${id}`, data),
+  deleteLink: (id) => request('DELETE', `/links/${id}`),
+
   // Users
   getUsers: () => request('GET', '/users'),
   createUser: (data) => request('POST', '/users', data),

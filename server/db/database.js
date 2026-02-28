@@ -25,12 +25,22 @@ function runMigrations(db) {
   }
 }
 
+function seedLinks(db) {
+  const existing = db.prepare('SELECT id FROM links WHERE url = ?').get('https://completes.onestrangelife.dev/');
+  if (!existing) {
+    db.prepare('INSERT INTO links (title, url, description, sort_order) VALUES (?, ?, ?, ?)').run(
+      'Completes', 'https://completes.onestrangelife.dev/', 'OneStrangeLife Completes tracker', 0
+    );
+  }
+}
+
 function initDb() {
   const db = getDb();
   const schema = fs.readFileSync(SCHEMA_PATH, 'utf8');
   db.exec(schema);
   runMigrations(db);
   seedAdminUser(db);
+  seedLinks(db);
   console.log('Database initialized');
 }
 
