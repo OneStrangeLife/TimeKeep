@@ -39,12 +39,31 @@ router.put('/:id', (req, res) => {
   res.json(db.prepare('SELECT * FROM pay_periods WHERE id = ?').get(req.params.id));
 });
 
+router.get('/for-date', (req, res) => {
+  const { date } = req.query;
+  if (!date) return res.status(400).json({ error: 'date required' });
+  const db = getDb();
+  const period = db.prepare(
+    'SELECT * FROM pay_periods WHERE start_date <= ? AND end_date >= ?'
+  ).get(date, date);
+  res.json(period || null);
+});
+
 router.post('/generate', (req, res) => {
   const year = parseInt(req.body.year);
   if (!year || year < 2000 || year > 2100) {
     return res.status(400).json({ error: 'Valid year required (2000–2100)' });
   }
   const db = getDb();
+
+  // Duplicate guard
+  const duplicate = db.prepare(
+    "SELECT COUNT(*) as cnt FROM pay_periods WHERE start_date LIKE ?"
+  ).get(`${year}-%`);
+  if (duplicate.cnt > 0) {
+    return res.status(409).json({ error: `Pay periods for ${year} already exist. Delete them first to regenerate.` });
+  }
+
   const existing = db.prepare('SELECT MAX(period_number) as max_num FROM pay_periods').get();
   let periodNum = (existing.max_num || 0) + 1;
 

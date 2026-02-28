@@ -31,9 +31,14 @@ export default function Dashboard() {
   const [entries, setEntries] = useState([]);
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [payPeriod, setPayPeriod] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const sidebarRef = useRef(null);
+
+  useEffect(() => {
+    api.getPayPeriodForDate(date).then(setPayPeriod).catch(() => setPayPeriod(null));
+  }, [date]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -117,7 +122,7 @@ export default function Dashboard() {
         />
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-4 mb-4 flex-wrap">
             <h1 className="text-2xl font-bold text-white">Time Sheet</h1>
             <input
               type="date"
@@ -125,6 +130,10 @@ export default function Dashboard() {
               onChange={e => setDate(e.target.value)}
               className="border border-slate-600 rounded-lg px-2 py-1 text-sm bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
+            {payPeriod
+              ? <span className="text-xs font-medium bg-emerald-900/50 text-emerald-400 border border-emerald-700/50 px-2 py-1 rounded-lg">{payPeriod.label}</span>
+              : <span className="text-xs text-slate-500 italic">No pay period</span>
+            }
             <button onClick={loadData} className="text-sm text-emerald-400 hover:text-emerald-300 underline">Refresh</button>
           </div>
 

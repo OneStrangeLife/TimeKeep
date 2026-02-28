@@ -59,6 +59,7 @@ export const api = {
 
   // Pay periods
   getPayPeriods: () => request('GET', '/pay-periods'),
+  getPayPeriodForDate: (date) => request('GET', `/pay-periods/for-date?date=${date}`),
   generatePayPeriods: (year) => request('POST', '/pay-periods/generate', { year }),
   createPayPeriod: (data) => request('POST', '/pay-periods', data),
   updatePayPeriod: (id, data) => request('PUT', `/pay-periods/${id}`, data),
