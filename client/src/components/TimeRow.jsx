@@ -47,10 +47,10 @@ export default function TimeRow({ entry, clients, allProjects, onSave, onDelete 
     : '—';
 
   const cellCls = 'px-2 py-1';
-  const inputCls = 'border rounded px-1 py-0.5 text-sm w-full focus:outline-none focus:ring-1 focus:ring-blue-400';
+  const inputCls = 'border border-slate-600 rounded-lg px-1 py-0.5 text-sm w-full bg-slate-800 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500';
 
   return (
-    <tr className="border-b hover:bg-gray-50">
+    <tr className="border-b border-slate-600 hover:bg-slate-600/40 transition-colors">
       {/* Client */}
       <td className={cellCls}>
         <select value={row.client_id || ''} onChange={handleClientChange} className={inputCls}>
@@ -80,7 +80,7 @@ export default function TimeRow({ entry, clients, allProjects, onSave, onDelete 
       <td className={`${cellCls} flex items-center gap-1`}>
         <input type="time" value={row.stop_time || ''} onChange={set('stop_time')} className={`${inputCls} flex-1`} />
         {!row.stop_time && row.start_time && (
-          <button onClick={stampStop} title="Stamp current time" className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-1 rounded">
+          <button onClick={stampStop} title="Stamp current time" className="text-xs bg-emerald-900/50 hover:bg-emerald-800/50 text-emerald-400 px-1 rounded transition-colors">
             Now
           </button>
         )}
@@ -99,7 +99,7 @@ export default function TimeRow({ entry, clients, allProjects, onSave, onDelete 
       </td>
 
       {/* Duration */}
-      <td className={`${cellCls} text-center text-sm font-mono text-gray-700 whitespace-nowrap`}>
+      <td className={`${cellCls} text-center text-sm font-mono text-emerald-400 whitespace-nowrap`}>
         {durLabel}
       </td>
 
@@ -114,13 +114,13 @@ export default function TimeRow({ entry, clients, allProjects, onSave, onDelete 
           <button
             onClick={save}
             disabled={saving || !row.client_id}
-            className="text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-0.5 rounded disabled:opacity-40"
+            className="text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-0.5 rounded disabled:opacity-40 transition-colors"
           >
             {saving ? '…' : 'Save'}
           </button>
           <button
             onClick={() => onDelete(row)}
-            className="text-xs text-red-500 hover:text-red-700 underline"
+            className="text-xs text-red-400 hover:text-red-300 underline"
           >
             Del
           </button>

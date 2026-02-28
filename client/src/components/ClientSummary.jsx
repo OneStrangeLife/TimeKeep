@@ -38,18 +38,18 @@ export default function ClientSummary({ entries, clients, projects }) {
   const grandSales = clientList.reduce((s, c) => s + c.totalSales, 0);
 
   return (
-    <div className="mt-6 bg-white rounded-lg shadow p-4">
-      <h2 className="text-lg font-semibold mb-3 text-gray-700">Daily Summary</h2>
+    <div className="mt-6 bg-slate-700 rounded-xl shadow border border-slate-600 p-4">
+      <h2 className="text-lg font-semibold mb-3 text-slate-300">Daily Summary</h2>
       <div className="space-y-4">
         {clientList.map((c, i) => (
           <div key={i}>
-            <div className="flex justify-between font-semibold text-gray-800 border-b pb-1">
+            <div className="flex justify-between font-semibold text-white border-b border-slate-600 pb-1">
               <span>{c.name}</span>
-              <span className="font-mono">{c.totalHours.toFixed(2)} h{c.totalSales > 0 ? ` · ${c.totalSales} sales` : ''}</span>
+              <span className="font-mono text-emerald-400">{c.totalHours.toFixed(2)} h{c.totalSales > 0 ? ` · ${c.totalSales} sales` : ''}</span>
             </div>
             <ul className="pl-4 mt-1 space-y-0.5">
               {Object.values(c.projects).map((p, j) => (
-                <li key={j} className="flex justify-between text-sm text-gray-600">
+                <li key={j} className="flex justify-between text-sm text-slate-400">
                   <span>{p.name}</span>
                   <span className="font-mono">{p.hours.toFixed(2)} h{p.sales > 0 ? ` · ${p.sales} sales` : ''}</span>
                 </li>
@@ -57,9 +57,9 @@ export default function ClientSummary({ entries, clients, projects }) {
             </ul>
           </div>
         ))}
-        <div className="flex justify-between font-bold text-gray-900 border-t pt-2">
+        <div className="flex justify-between font-bold text-white border-t border-slate-600 pt-2">
           <span>Grand Total</span>
-          <span className="font-mono">{grandHours.toFixed(2)} h{grandSales > 0 ? ` · ${grandSales} sales` : ''}</span>
+          <span className="font-mono text-emerald-400">{grandHours.toFixed(2)} h{grandSales > 0 ? ` · ${grandSales} sales` : ''}</span>
         </div>
       </div>
     </div>

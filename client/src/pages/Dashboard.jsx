@@ -103,26 +103,26 @@ export default function Dashboard() {
   return (
     <div className="max-w-7xl mx-auto p-4">
       <div className="flex items-center gap-4 mb-4">
-        <h1 className="text-2xl font-bold text-gray-800">Time Sheet</h1>
+        <h1 className="text-2xl font-bold text-white">Time Sheet</h1>
         <input
           type="date"
           value={date}
           onChange={e => setDate(e.target.value)}
-          className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="border border-slate-600 rounded-lg px-2 py-1 text-sm bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
-        <button onClick={loadData} className="text-sm text-blue-600 underline">Refresh</button>
+        <button onClick={loadData} className="text-sm text-emerald-400 hover:text-emerald-300 underline">Refresh</button>
       </div>
 
-      {error && <p className="text-red-600 mb-3 text-sm">{error}</p>}
+      {error && <p className="text-red-400 mb-3 text-sm">{error}</p>}
 
       {loading ? (
-        <p className="text-gray-400">Loading…</p>
+        <p className="text-slate-400">Loading…</p>
       ) : (
         <>
-          <div className="overflow-x-auto bg-white rounded-lg shadow">
+          <div className="overflow-x-auto bg-slate-700 rounded-xl shadow border border-slate-600">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="bg-gray-100 text-gray-600 text-xs uppercase">
+                <tr className="bg-slate-800 text-slate-400 text-xs uppercase">
                   <th className="px-2 py-2 text-left">Client</th>
                   <th className="px-2 py-2 text-left">Project</th>
                   <th className="px-2 py-2 text-left">Start</th>
@@ -136,7 +136,7 @@ export default function Dashboard() {
               <tbody>
                 {entries.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-6 text-gray-400 text-center">
+                    <td colSpan={8} className="px-4 py-6 text-slate-400 text-center">
                       No entries for this date. Click "+ Add Entry" to start.
                     </td>
                   </tr>
@@ -158,7 +158,7 @@ export default function Dashboard() {
 
           <button
             onClick={addRow}
-            className="mt-3 bg-blue-700 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded"
+            className="mt-3 bg-emerald-500 hover:bg-emerald-600 text-white text-sm px-4 py-2 rounded-lg transition-colors"
           >
             + Add Entry
           </button>

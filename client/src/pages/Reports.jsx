@@ -45,60 +45,59 @@ export default function Reports() {
     return p;
   }
 
+  const inputCls = 'border border-slate-600 rounded-lg px-2 py-1 text-sm bg-slate-800 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500';
+
   return (
     <div className="max-w-5xl mx-auto p-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-4">Reports</h1>
+      <h1 className="text-2xl font-bold text-white mb-4">Reports</h1>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
+      <div className="bg-slate-700 rounded-xl shadow border border-slate-600 p-4 mb-6">
         <div className="flex flex-wrap gap-4 items-end">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Start date</label>
-            <input type="date" value={start} onChange={e => setStart(e.target.value)}
-              className="border rounded px-2 py-1 text-sm" />
+            <label className="block text-xs text-slate-400 mb-1">Start date</label>
+            <input type="date" value={start} onChange={e => setStart(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">End date</label>
-            <input type="date" value={end} onChange={e => setEnd(e.target.value)}
-              className="border rounded px-2 py-1 text-sm" />
+            <label className="block text-xs text-slate-400 mb-1">End date</label>
+            <input type="date" value={end} onChange={e => setEnd(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Client</label>
-            <select value={clientId} onChange={e => setClientId(e.target.value)}
-              className="border rounded px-2 py-1 text-sm">
+            <label className="block text-xs text-slate-400 mb-1">Client</label>
+            <select value={clientId} onChange={e => setClientId(e.target.value)} className={inputCls}>
               <option value="">All clients</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <button onClick={runReport} disabled={loading}
-            className="bg-blue-700 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">
+            className="bg-emerald-500 hover:bg-emerald-600 text-white text-sm px-4 py-2 rounded-lg disabled:opacity-50 transition-colors">
             {loading ? 'Running…' : 'Run Report'}
           </button>
         </div>
       </div>
 
-      {error && <p className="text-red-600 mb-3 text-sm">{error}</p>}
+      {error && <p className="text-red-400 mb-3 text-sm">{error}</p>}
 
       {/* Summary table */}
       {summary && (
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <h2 className="text-lg font-semibold mb-3">Summary</h2>
+        <div className="bg-slate-700 rounded-xl shadow border border-slate-600 p-4 mb-4">
+          <h2 className="text-lg font-semibold mb-3 text-white">Summary</h2>
           {summary.summary.length === 0 ? (
-            <p className="text-gray-400 text-sm">No entries found for this period.</p>
+            <p className="text-slate-400 text-sm">No entries found for this period.</p>
           ) : (
             <div className="space-y-4">
               {summary.summary.map((c, i) => (
                 <div key={i}>
-                  <div className="flex justify-between font-semibold text-gray-800 border-b pb-1">
+                  <div className="flex justify-between font-semibold text-white border-b border-slate-600 pb-1">
                     <span>{c.name}</span>
-                    <span className="font-mono">
+                    <span className="font-mono text-emerald-400">
                       {fmtH(c.total_hours)} h
                       {c.total_sales > 0 ? ` · ${c.total_sales} sales` : ''}
                     </span>
                   </div>
                   <ul className="pl-4 mt-1 space-y-0.5">
                     {c.projects.map((p, j) => (
-                      <li key={j} className="flex justify-between text-sm text-gray-600">
+                      <li key={j} className="flex justify-between text-sm text-slate-400">
                         <span>{p.name}</span>
                         <span className="font-mono">
                           {fmtH(p.hours)} h
@@ -109,9 +108,9 @@ export default function Reports() {
                   </ul>
                 </div>
               ))}
-              <div className="flex justify-between font-bold text-gray-900 border-t pt-2">
+              <div className="flex justify-between font-bold text-white border-t border-slate-600 pt-2">
                 <span>Grand Total</span>
-                <span className="font-mono">
+                <span className="font-mono text-emerald-400">
                   {fmtH(summary.grand_total_hours)} h
                   {summary.grand_total_sales > 0 ? ` · ${summary.grand_total_sales} sales` : ''}
                 </span>
@@ -127,7 +126,7 @@ export default function Reports() {
           href={api.exportCsvUrl(exportParams())}
           target="_blank"
           rel="noreferrer"
-          className="bg-green-700 hover:bg-green-600 text-white text-sm px-4 py-2 rounded"
+          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm px-4 py-2 rounded-lg transition-colors"
         >
           Download CSV
         </a>
@@ -135,7 +134,7 @@ export default function Reports() {
           href={api.exportExcelUrl(exportParams())}
           target="_blank"
           rel="noreferrer"
-          className="bg-teal-700 hover:bg-teal-600 text-white text-sm px-4 py-2 rounded"
+          className="bg-teal-600 hover:bg-teal-500 text-white text-sm px-4 py-2 rounded-lg transition-colors"
         >
           Download Excel
         </a>
@@ -143,7 +142,7 @@ export default function Reports() {
           href={api.exportPrintUrl(exportParams())}
           target="_blank"
           rel="noreferrer"
-          className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-4 py-2 rounded"
+          className="bg-slate-600 hover:bg-slate-500 text-white text-sm px-4 py-2 rounded-lg transition-colors"
         >
           Print View
         </a>
