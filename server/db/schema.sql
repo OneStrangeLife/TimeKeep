@@ -35,3 +35,12 @@ CREATE TABLE IF NOT EXISTS time_entries (
   notes TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS pay_periods (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  period_number INTEGER NOT NULL,
+  label TEXT,
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

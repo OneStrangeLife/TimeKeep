@@ -30,7 +30,13 @@ export default function Setup() {
   const [editingProject, setEditingProject] = useState(null);
   const [error, setError] = useState('');
 
-  useEffect(() => { loadClients(); }, []);
+  // Pay periods state
+  const [payPeriods, setPayPeriods] = useState([]);
+  const [editingPeriod, setEditingPeriod] = useState(null);
+  const [generateYear, setGenerateYear] = useState(new Date().getFullYear());
+  const [generating, setGenerating] = useState(false);
+
+  useEffect(() => { loadClients(); loadPayPeriods(); }, []);
   useEffect(() => { if (selectedClient) loadProjects(selectedClient.id); else setProjects([]); }, [selectedClient]);
 
   async function loadClients() {
@@ -44,6 +50,13 @@ export default function Setup() {
     try {
       const data = await api.getProjects(clientId);
       setProjects(data);
+    } catch (e) { setError(e.message); }
+  }
+
+  async function loadPayPeriods() {
+    try {
+      const data = await api.getPayPeriods();
+      setPayPeriods(data);
     } catch (e) { setError(e.message); }
   }
 
@@ -98,10 +111,41 @@ export default function Setup() {
     } catch (e) { setError(e.message); }
   }
 
+  async function generatePeriods(e) {
+    e.preventDefault();
+    setGenerating(true);
+    try {
+      await api.generatePayPeriods(Number(generateYear));
+      loadPayPeriods();
+    } catch (e) { setError(e.message); }
+    finally { setGenerating(false); }
+  }
+
+  async function savePeriodEdit(id) {
+    try {
+      await api.updatePayPeriod(id, {
+        period_number: editingPeriod.period_number,
+        start_date: editingPeriod.start_date,
+        end_date: editingPeriod.end_date,
+        label: editingPeriod.label || null,
+      });
+      setEditingPeriod(null);
+      loadPayPeriods();
+    } catch (e) { setError(e.message); }
+  }
+
+  async function deletePeriod(id) {
+    try {
+      await api.deletePayPeriod(id);
+      loadPayPeriods();
+    } catch (e) { setError(e.message); }
+  }
+
   const visibleClients = clients.filter(c => showInactive || c.active);
   const visibleProjects = projects.filter(p => showInactive || p.active);
 
   const inputCls = 'border border-slate-600 rounded-lg px-2 py-1 text-sm bg-slate-800 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 flex-1';
+  const inputSmCls = 'border border-slate-600 rounded-lg px-2 py-1 text-sm bg-slate-800 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500';
 
   return (
     <div className="max-w-5xl mx-auto p-6">
@@ -208,6 +252,117 @@ export default function Setup() {
             </>
           )}
         </div>
+      </div>
+
+      {/* Pay Periods panel */}
+      <div className="mt-6 bg-slate-700 rounded-xl shadow border border-slate-600 p-4">
+        <h2 className="text-lg font-semibold mb-3 text-white">Pay Periods</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="bg-slate-800 text-slate-400 text-xs uppercase">
+                <th className="px-3 py-2 text-left w-12">#</th>
+                <th className="px-3 py-2 text-left">Label</th>
+                <th className="px-3 py-2 text-left">Start Date</th>
+                <th className="px-3 py-2 text-left">End Date</th>
+                <th className="px-3 py-2 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-600">
+              {payPeriods.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-3 py-4 text-slate-400 text-center">No pay periods yet.</td>
+                </tr>
+              )}
+              {payPeriods.map(p => (
+                <tr key={p.id} className="text-slate-200">
+                  {editingPeriod?.id === p.id ? (
+                    <>
+                      <td className="px-3 py-2">
+                        <input
+                          type="number"
+                          className={`${inputSmCls} w-16`}
+                          value={editingPeriod.period_number}
+                          onChange={e => setEditingPeriod({ ...editingPeriod, period_number: e.target.value })}
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          className={inputSmCls}
+                          placeholder="Optional label"
+                          value={editingPeriod.label || ''}
+                          onChange={e => setEditingPeriod({ ...editingPeriod, label: e.target.value })}
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="date"
+                          className={inputSmCls}
+                          value={editingPeriod.start_date}
+                          onChange={e => setEditingPeriod({ ...editingPeriod, start_date: e.target.value })}
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="date"
+                          className={inputSmCls}
+                          value={editingPeriod.end_date}
+                          onChange={e => setEditingPeriod({ ...editingPeriod, end_date: e.target.value })}
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <span className="flex gap-2">
+                          <button onClick={() => savePeriodEdit(p.id)} className="text-xs text-emerald-400 hover:text-emerald-300 underline">Save</button>
+                          <button onClick={() => setEditingPeriod(null)} className="text-xs text-slate-400 hover:text-slate-300 underline">Cancel</button>
+                        </span>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-3 py-2">{p.period_number}</td>
+                      <td className="px-3 py-2 text-slate-400">{p.label || '—'}</td>
+                      <td className="px-3 py-2">{p.start_date}</td>
+                      <td className="px-3 py-2">{p.end_date}</td>
+                      <td className="px-3 py-2">
+                        <span className="flex gap-2">
+                          <button
+                            onClick={() => setEditingPeriod({ id: p.id, period_number: p.period_number, start_date: p.start_date, end_date: p.end_date, label: p.label || '' })}
+                            className="text-xs text-emerald-400 hover:text-emerald-300 underline"
+                          >
+                            Edit
+                          </button>
+                          <ConfirmButton label="Delete" onConfirm={() => deletePeriod(p.id)} />
+                        </span>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Generate periods by year */}
+        <form onSubmit={generatePeriods} className="mt-4 flex items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-slate-400">Generate all periods for year</label>
+            <input
+              type="number"
+              className={`${inputSmCls} w-24`}
+              value={generateYear}
+              onChange={e => setGenerateYear(e.target.value)}
+              min="2000"
+              max="2100"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={generating}
+            className="bg-emerald-500 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-50"
+          >
+            {generating ? 'Generating…' : 'Generate'}
+          </button>
+        </form>
       </div>
     </div>
   );

@@ -1,11 +1,12 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
-import NavBar from './components/NavBar.jsx';
+import Sidebar from './components/Sidebar.jsx';
 import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Setup from './pages/Setup.jsx';
 import Reports from './pages/Reports.jsx';
+import About from './pages/About.jsx';
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
@@ -17,16 +18,19 @@ function RequireAuth({ children }) {
 function AppRoutes() {
   const { user } = useAuth();
   return (
-    <>
-      {user && <NavBar />}
-      <Routes>
-        <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
-        <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
-        <Route path="/setup" element={<RequireAuth><Setup /></RequireAuth>} />
-        <Route path="/reports" element={<RequireAuth><Reports /></RequireAuth>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </>
+    <div className="flex min-h-screen bg-slate-800">
+      {user && <Sidebar />}
+      <main className="flex-1 overflow-auto">
+        <Routes>
+          <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+          <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
+          <Route path="/setup" element={<RequireAuth><Setup /></RequireAuth>} />
+          <Route path="/reports" element={<RequireAuth><Reports /></RequireAuth>} />
+          <Route path="/about" element={<RequireAuth><About /></RequireAuth>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+    </div>
   );
 }
 

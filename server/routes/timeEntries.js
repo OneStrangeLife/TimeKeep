@@ -16,6 +16,19 @@ function roundToQuarterHour(start, stop) {
   return remainder >= 7.5 ? (quarters + 1) * 0.25 : quarters * 0.25;
 }
 
+router.get('/history', (req, res) => {
+  const db = getDb();
+  const targetUser = req.user.id;
+  const rows = db.prepare(`
+    SELECT entry_date, COUNT(*) as entry_count, SUM(duration_hours) as total_hours
+    FROM time_entries
+    WHERE user_id = ? AND entry_date >= date('now', '-30 days')
+    GROUP BY entry_date
+    ORDER BY entry_date DESC
+  `).all(targetUser);
+  res.json(rows);
+});
+
 router.get('/', (req, res) => {
   const { date, user_id } = req.query;
   const db = getDb();

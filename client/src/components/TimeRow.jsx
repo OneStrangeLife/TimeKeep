@@ -4,6 +4,14 @@ export default function TimeRow({ entry, clients, allProjects, onSave, onDelete 
   const [row, setRow] = useState({ ...entry });
   const [saving, setSaving] = useState(false);
 
+  // When a new entry gets its real server id after first save, sync it into local state
+  useEffect(() => {
+    if (entry.id !== row.id) {
+      setRow(r => ({ ...r, id: entry.id, _isNew: false, duration_hours: entry.duration_hours }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entry.id]);
+
   // Filter projects for selected client
   const projects = allProjects.filter(
     p => p.client_id === (row.client_id ? Number(row.client_id) : null) && p.active

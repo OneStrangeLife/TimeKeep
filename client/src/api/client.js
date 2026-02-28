@@ -54,6 +54,19 @@ export const api = {
   updateTimeEntry: (id, data) => request('PUT', `/time-entries/${id}`, data),
   deleteTimeEntry: (id) => request('DELETE', `/time-entries/${id}`),
 
+  // Date history
+  getDateHistory: () => request('GET', '/time-entries/history'),
+
+  // Pay periods
+  getPayPeriods: () => request('GET', '/pay-periods'),
+  generatePayPeriods: (year) => request('POST', '/pay-periods/generate', { year }),
+  createPayPeriod: (data) => request('POST', '/pay-periods', data),
+  updatePayPeriod: (id, data) => request('PUT', `/pay-periods/${id}`, data),
+  deletePayPeriod: (id) => request('DELETE', `/pay-periods/${id}`),
+
+  // Info
+  getInfo: () => request('GET', '/info'),
+
   // Reports
   getSummary: (params) => request('GET', `/reports/summary?${new URLSearchParams(params)}`),
   exportCsvUrl: (params) => `${BASE}/reports/export/csv?${new URLSearchParams(params)}&token=${getToken()}`,
