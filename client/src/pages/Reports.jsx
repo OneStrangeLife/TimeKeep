@@ -15,22 +15,23 @@ export default function Reports() {
   const [start, setStart] = useState(firstOfMonth);
   const [end, setEnd] = useState(today);
   const [clientId, setClientId] = useState('');
+  const [userId, setUserId] = useState('');
   const [clients, setClients] = useState([]);
+  const [users, setUsers] = useState([]);
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     api.getClients().then(setClients).catch(e => setError(e.message));
+    if (user.is_admin) api.getUsers().then(setUsers).catch(() => {});
   }, []);
 
   async function runReport() {
     setLoading(true);
     setError('');
     try {
-      const params = { start, end };
-      if (clientId) params.client_id = clientId;
-      const data = await api.getSummary(params);
+      const data = await api.getSummary(buildParams());
       setSummary(data);
     } catch (e) {
       setError(e.message);
@@ -39,9 +40,10 @@ export default function Reports() {
     }
   }
 
-  function exportParams() {
+  function buildParams() {
     const p = { start, end };
     if (clientId) p.client_id = clientId;
+    if (user.is_admin && userId) p.user_id = userId;
     return p;
   }
 
@@ -69,6 +71,17 @@ export default function Reports() {
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
+          {user.is_admin && (
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">User</label>
+              <select value={userId} onChange={e => setUserId(e.target.value)} className={inputCls}>
+                <option value="">All users</option>
+                {users.filter(u => u.active).map(u => (
+                  <option key={u.id} value={u.id}>{u.display_name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <button onClick={runReport} disabled={loading}
             className="bg-emerald-500 hover:bg-emerald-600 text-white text-sm px-4 py-2 rounded-lg disabled:opacity-50 transition-colors">
             {loading ? 'Running…' : 'Run Report'}
@@ -123,7 +136,7 @@ export default function Reports() {
       {/* Export buttons */}
       <div className="flex gap-3 flex-wrap">
         <a
-          href={api.exportCsvUrl(exportParams())}
+          href={api.exportCsvUrl(buildParams())}
           target="_blank"
           rel="noreferrer"
           className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm px-4 py-2 rounded-lg transition-colors"
@@ -131,7 +144,7 @@ export default function Reports() {
           Download CSV
         </a>
         <a
-          href={api.exportExcelUrl(exportParams())}
+          href={api.exportExcelUrl(buildParams())}
           target="_blank"
           rel="noreferrer"
           className="bg-teal-600 hover:bg-teal-500 text-white text-sm px-4 py-2 rounded-lg transition-colors"
@@ -139,7 +152,7 @@ export default function Reports() {
           Download Excel
         </a>
         <a
-          href={api.exportPrintUrl(exportParams())}
+          href={api.exportPrintUrl(buildParams())}
           target="_blank"
           rel="noreferrer"
           className="bg-slate-600 hover:bg-slate-500 text-white text-sm px-4 py-2 rounded-lg transition-colors"
