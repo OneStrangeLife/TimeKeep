@@ -64,6 +64,12 @@ export const api = {
   updatePayPeriod: (id, data) => request('PUT', `/pay-periods/${id}`, data),
   deletePayPeriod: (id) => request('DELETE', `/pay-periods/${id}`),
 
+  // Users
+  getUsers: () => request('GET', '/users'),
+  createUser: (data) => request('POST', '/users', data),
+  updateUser: (id, data) => request('PUT', `/users/${id}`, data),
+  changePassword: (id, data) => request('PUT', `/users/${id}/password`, data),
+
   // Info
   getInfo: () => request('GET', '/info'),
 

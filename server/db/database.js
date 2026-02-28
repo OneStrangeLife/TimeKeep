@@ -17,10 +17,19 @@ function getDb() {
   return db;
 }
 
+function runMigrations(db) {
+  const userCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
+  if (!userCols.includes('active')) {
+    db.exec('ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
+    console.log('Migration: added users.active column');
+  }
+}
+
 function initDb() {
   const db = getDb();
   const schema = fs.readFileSync(SCHEMA_PATH, 'utf8');
   db.exec(schema);
+  runMigrations(db);
   seedAdminUser(db);
   console.log('Database initialized');
 }

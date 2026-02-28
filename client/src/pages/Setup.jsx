@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 function ConfirmButton({ onConfirm, label = 'Deactivate', className = '' }) {
   const [confirming, setConfirming] = useState(false);
@@ -19,6 +20,8 @@ function ConfirmButton({ onConfirm, label = 'Deactivate', className = '' }) {
 }
 
 export default function Setup() {
+  const { user: currentUser } = useAuth();
+
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -36,7 +39,13 @@ export default function Setup() {
   const [generateYear, setGenerateYear] = useState(new Date().getFullYear());
   const [generating, setGenerating] = useState(false);
 
-  useEffect(() => { loadClients(); loadPayPeriods(); }, []);
+  // Users state (admin only)
+  const [users, setUsers] = useState([]);
+  const [editingUser, setEditingUser] = useState(null);
+  const [newUser, setNewUser] = useState({ username: '', display_name: '', password: '', is_admin: false });
+  const [resetPw, setResetPw] = useState({ userId: null, password: '' });
+
+  useEffect(() => { loadClients(); loadPayPeriods(); if (currentUser?.is_admin) loadUsers(); }, []);
   useEffect(() => { if (selectedClient) loadProjects(selectedClient.id); else setProjects([]); }, [selectedClient]);
 
   async function loadClients() {
@@ -119,6 +128,47 @@ export default function Setup() {
       loadPayPeriods();
     } catch (e) { setError(e.message); }
     finally { setGenerating(false); }
+  }
+
+  async function loadUsers() {
+    try {
+      const data = await api.getUsers();
+      setUsers(data);
+    } catch (e) { setError(e.message); }
+  }
+
+  async function addUser(e) {
+    e.preventDefault();
+    if (!newUser.username.trim() || !newUser.display_name.trim() || !newUser.password) return;
+    try {
+      await api.createUser(newUser);
+      setNewUser({ username: '', display_name: '', password: '', is_admin: false });
+      loadUsers();
+    } catch (e) { setError(e.message); }
+  }
+
+  async function saveUserEdit(id) {
+    try {
+      await api.updateUser(id, { display_name: editingUser.display_name, is_admin: editingUser.is_admin });
+      setEditingUser(null);
+      loadUsers();
+    } catch (e) { setError(e.message); }
+  }
+
+  async function toggleUserActive(u) {
+    try {
+      await api.updateUser(u.id, { active: !u.active });
+      loadUsers();
+    } catch (e) { setError(e.message); }
+  }
+
+  async function saveResetPassword(e) {
+    e.preventDefault();
+    if (!resetPw.password) return;
+    try {
+      await api.changePassword(resetPw.userId, { new_password: resetPw.password });
+      setResetPw({ userId: null, password: '' });
+    } catch (e) { setError(e.message); }
   }
 
   async function savePeriodEdit(id) {
@@ -364,6 +414,120 @@ export default function Setup() {
           </button>
         </form>
       </div>
+
+      {/* Users panel — admin only */}
+      {currentUser?.is_admin && (
+        <div className="mt-6 bg-slate-700 rounded-xl shadow border border-slate-600 p-4">
+          <h2 className="text-lg font-semibold mb-3 text-white">Users</h2>
+          <table className="min-w-full text-sm mb-4">
+            <thead>
+              <tr className="bg-slate-800 text-slate-400 text-xs uppercase">
+                <th className="px-3 py-2 text-left">Username</th>
+                <th className="px-3 py-2 text-left">Display Name</th>
+                <th className="px-3 py-2 text-left">Role</th>
+                <th className="px-3 py-2 text-left">Status</th>
+                <th className="px-3 py-2 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-600">
+              {users.map(u => (
+                <tr key={u.id} className={`text-slate-200 ${!u.active ? 'opacity-50' : ''}`}>
+                  <td className="px-3 py-2 font-mono text-sm">{u.username}</td>
+                  <td className="px-3 py-2">
+                    {editingUser?.id === u.id ? (
+                      <input
+                        className={inputSmCls}
+                        value={editingUser.display_name}
+                        onChange={e => setEditingUser({ ...editingUser, display_name: e.target.value })}
+                        autoFocus
+                      />
+                    ) : u.display_name}
+                  </td>
+                  <td className="px-3 py-2">
+                    {editingUser?.id === u.id ? (
+                      <label className="flex items-center gap-1 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={editingUser.is_admin}
+                          onChange={e => setEditingUser({ ...editingUser, is_admin: e.target.checked })}
+                        />
+                        Admin
+                      </label>
+                    ) : (
+                      u.is_admin
+                        ? <span className="text-emerald-400 text-xs font-medium">Admin</span>
+                        : <span className="text-slate-400 text-xs">User</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    {u.active
+                      ? <span className="text-emerald-400 text-xs">Active</span>
+                      : <span className="text-slate-500 text-xs">Inactive</span>}
+                  </td>
+                  <td className="px-3 py-2">
+                    {editingUser?.id === u.id ? (
+                      <span className="flex gap-2">
+                        <button onClick={() => saveUserEdit(u.id)} className="text-xs text-emerald-400 underline">Save</button>
+                        <button onClick={() => setEditingUser(null)} className="text-xs text-slate-400 underline">Cancel</button>
+                      </span>
+                    ) : resetPw.userId === u.id ? (
+                      <form onSubmit={saveResetPassword} className="flex gap-1 items-center">
+                        <input
+                          type="password"
+                          className={`${inputSmCls} w-32`}
+                          placeholder="New password"
+                          value={resetPw.password}
+                          onChange={e => setResetPw({ ...resetPw, password: e.target.value })}
+                          autoFocus
+                        />
+                        <button type="submit" className="text-xs text-emerald-400 underline">Set</button>
+                        <button type="button" onClick={() => setResetPw({ userId: null, password: '' })} className="text-xs text-slate-400 underline">Cancel</button>
+                      </form>
+                    ) : (
+                      <span className="flex gap-2">
+                        <button onClick={() => setEditingUser({ id: u.id, display_name: u.display_name, is_admin: !!u.is_admin })} className="text-xs text-emerald-400 hover:text-emerald-300 underline">Edit</button>
+                        <button onClick={() => setResetPw({ userId: u.id, password: '' })} className="text-xs text-slate-400 hover:text-slate-300 underline">Reset PW</button>
+                        {u.id !== currentUser.id && (
+                          <ConfirmButton
+                            label={u.active ? 'Deactivate' : 'Activate'}
+                            onConfirm={() => toggleUserActive(u)}
+                          />
+                        )}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Add user form */}
+          <form onSubmit={addUser} className="flex flex-wrap gap-2 items-end border-t border-slate-600 pt-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">Username</label>
+              <input className={`${inputSmCls} w-32`} value={newUser.username} onChange={e => setNewUser({ ...newUser, username: e.target.value })} placeholder="jsmith" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">Display Name</label>
+              <input className={`${inputSmCls} w-36`} value={newUser.display_name} onChange={e => setNewUser({ ...newUser, display_name: e.target.value })} placeholder="John Smith" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">Password</label>
+              <input type="password" className={`${inputSmCls} w-32`} value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} placeholder="••••••" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">Role</label>
+              <label className="flex items-center gap-1 text-sm text-slate-300 h-7">
+                <input type="checkbox" checked={newUser.is_admin} onChange={e => setNewUser({ ...newUser, is_admin: e.target.checked })} />
+                Admin
+              </label>
+            </div>
+            <button type="submit" className="bg-emerald-500 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-emerald-600 transition-colors">
+              Add User
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
