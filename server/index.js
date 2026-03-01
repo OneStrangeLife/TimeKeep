@@ -14,6 +14,7 @@ const payPeriodRoutes = require('./routes/payPeriods');
 const infoRoutes = require('./routes/info');
 const userRoutes = require('./routes/users');
 const linkRoutes = require('./routes/links');
+const scriptRoutes = require('./routes/scripts');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -31,6 +32,7 @@ app.use('/api/pay-periods', payPeriodRoutes);
 app.use('/api/info', infoRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/links', linkRoutes);
+app.use('/api/scripts', scriptRoutes);
 
 // Serve built React app in production
 const publicDir = path.join(__dirname, 'public');

@@ -77,6 +77,12 @@ export const api = {
   updateUser: (id, data) => request('PUT', `/users/${id}`, data),
   changePassword: (id, data) => request('PUT', `/users/${id}/password`, data),
 
+  // Scripts
+  getScripts: () => request('GET', '/scripts'),
+  createScript: (data) => request('POST', '/scripts', data),
+  updateScript: (id, data) => request('PUT', `/scripts/${id}`, data),
+  deleteScript: (id) => request('DELETE', `/scripts/${id}`),
+
   // Info
   getInfo: () => request('GET', '/info'),
 

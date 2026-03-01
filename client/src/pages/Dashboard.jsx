@@ -62,7 +62,13 @@ export default function Dashboard() {
   useEffect(() => { loadData(); }, [loadData]);
 
   function addRow() {
-    setEntries(prev => [...prev, newBlankEntry(date)]);
+    setEntries(prev => {
+      // Carry forward the last entry's stop_time as the new entry's start_time
+      const lastStop = [...prev].reverse().find(e => e.stop_time)?.stop_time || '';
+      const entry = newBlankEntry(date);
+      entry.start_time = lastStop;
+      return [...prev, entry];
+    });
   }
 
   async function handleSave(row) {

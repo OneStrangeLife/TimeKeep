@@ -35,6 +35,7 @@ export default function Sidebar() {
         {navLink('/setup', 'Setup')}
         {navLink('/reports', 'Reports')}
         {navLink('/links', 'Links')}
+        {navLink('/scripts', 'Scripts')}
         <div className="border-t border-slate-700/60 my-2" />
         {navLink('/about', 'About')}
       </nav>
