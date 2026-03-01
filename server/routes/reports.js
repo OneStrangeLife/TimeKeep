@@ -32,7 +32,9 @@ function buildQuery(start, end, client_id, user_id) {
 
 router.get('/summary', (req, res) => {
   const { start, end, client_id, user_id } = req.query;
-  const targetUser = req.user.is_admin ? user_id : req.user.id;
+  const targetUser = req.user.is_admin && user_id
+    ? (user_id === 'all' ? null : user_id)
+    : req.user.id;
   const db = getDb();
   const { sql, params } = buildQuery(start, end, client_id, targetUser);
   const entries = db.prepare(sql).all(...params);
@@ -67,7 +69,9 @@ router.get('/summary', (req, res) => {
 
 router.get('/export/csv', (req, res) => {
   const { start, end, client_id, user_id } = req.query;
-  const targetUser = req.user.is_admin ? user_id : req.user.id;
+  const targetUser = req.user.is_admin && user_id
+    ? (user_id === 'all' ? null : user_id)
+    : req.user.id;
   const db = getDb();
   const { sql, params } = buildQuery(start, end, client_id, targetUser);
   const entries = db.prepare(sql).all(...params);
@@ -95,7 +99,9 @@ router.get('/export/csv', (req, res) => {
 
 router.get('/export/excel', async (req, res) => {
   const { start, end, client_id, user_id } = req.query;
-  const targetUser = req.user.is_admin ? user_id : req.user.id;
+  const targetUser = req.user.is_admin && user_id
+    ? (user_id === 'all' ? null : user_id)
+    : req.user.id;
   const db = getDb();
   const { sql, params } = buildQuery(start, end, client_id, targetUser);
   const entries = db.prepare(sql).all(...params);
@@ -136,7 +142,9 @@ router.get('/export/excel', async (req, res) => {
 // Print-friendly HTML report
 router.get('/export/print', (req, res) => {
   const { start, end, client_id, user_id } = req.query;
-  const targetUser = req.user.is_admin ? user_id : req.user.id;
+  const targetUser = req.user.is_admin && user_id
+    ? (user_id === 'all' ? null : user_id)
+    : req.user.id;
   const db = getDb();
   const { sql, params } = buildQuery(start, end, client_id, targetUser);
   const entries = db.prepare(sql).all(...params);

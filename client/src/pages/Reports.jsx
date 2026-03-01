@@ -43,7 +43,7 @@ export default function Reports() {
   function buildParams() {
     const p = { start, end };
     if (clientId) p.client_id = clientId;
-    if (user.is_admin && userId) p.user_id = userId;
+    if (user.is_admin) p.user_id = userId || 'all';
     return p;
   }
 
