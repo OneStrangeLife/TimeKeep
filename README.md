@@ -34,6 +34,14 @@ npm start
 ```
 Access at http://localhost:3001 (or whatever PORT you set).
 
+### Production checklist
+
+- [ ] Set **`JWT_SECRET`** in the environment to a long, random value (never use the default).
+- [ ] Set **`CLIENT_URL`** to your frontend origin (e.g. `https://timekeep.example.com`) if different from the server.
+- [ ] Set **`NODE_ENV=production`** when running the server.
+- [ ] Run **`npm audit`** (root and `client/`) after dependency changes. Use **`npm audit fix`** in the project root and in `client/` when you’re okay with the proposed changes. (Root: `tar` advisories are from `better-sqlite3`’s install tooling; client: `npm audit fix --force` would upgrade to Vite 7 and may introduce breaking changes.)
+- [ ] Change the default admin password after first login.
+
 ## Project Structure
 
 ```

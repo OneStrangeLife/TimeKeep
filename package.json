@@ -20,5 +20,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "overrides": {
+    "tar": "^6.2.0"
   }
 }

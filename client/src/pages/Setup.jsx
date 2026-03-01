@@ -304,7 +304,8 @@ export default function Setup() {
         </div>
       </div>
 
-      {/* Pay Periods panel */}
+      {/* Pay Periods panel — admin only */}
+      {currentUser?.is_admin && (
       <div className="mt-6 bg-slate-700 rounded-xl shadow border border-slate-600 p-4">
         <h2 className="text-lg font-semibold mb-3 text-white">Pay Periods</h2>
         <div className="overflow-x-auto">
@@ -414,6 +415,7 @@ export default function Setup() {
           </button>
         </form>
       </div>
+      )}
 
       {/* Users panel — admin only */}
       {currentUser?.is_admin && (

@@ -56,9 +56,22 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { client_id, project_id, entry_date, start_time, stop_time, sales_count, notes } = req.body;
+  const { client_id, project_id, entry_date, start_time, stop_time, sales_count, notes, user_id: bodyUserId } = req.body;
   if (!client_id || !entry_date) {
     return res.status(400).json({ error: 'client_id and entry_date required' });
+  }
+
+  const db = getDb();
+  let targetUserId = req.user.id;
+  if (bodyUserId != null && bodyUserId !== '') {
+    if (!req.user.is_admin) {
+      return res.status(403).json({ error: 'Only admins can create entries for another user' });
+    }
+    const targetUser = db.prepare('SELECT id, active FROM users WHERE id = ?').get(bodyUserId);
+    if (!targetUser || !targetUser.active) {
+      return res.status(400).json({ error: 'Invalid or inactive user' });
+    }
+    targetUserId = targetUser.id;
   }
 
   let duration_hours = null;
@@ -66,11 +79,10 @@ router.post('/', (req, res) => {
     duration_hours = roundToQuarterHour(start_time, stop_time);
   }
 
-  const db = getDb();
   const result = db.prepare(`
     INSERT INTO time_entries (user_id, client_id, project_id, entry_date, start_time, stop_time, sales_count, duration_hours, notes)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(req.user.id, client_id, project_id || null, entry_date, start_time || null, stop_time || null, sales_count || null, duration_hours, notes || null);
+  `).run(targetUserId, client_id, project_id || null, entry_date, start_time || null, stop_time || null, sales_count || null, duration_hours, notes || null);
 
   res.status(201).json(db.prepare(`
     SELECT te.*, c.name as client_name, p.name as project_name

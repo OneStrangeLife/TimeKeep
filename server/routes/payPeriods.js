@@ -1,6 +1,6 @@
 const express = require('express');
 const { getDb } = require('../db/database');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -10,7 +10,7 @@ router.get('/', (req, res) => {
   res.json(db.prepare('SELECT * FROM pay_periods ORDER BY start_date ASC').all());
 });
 
-router.post('/', (req, res) => {
+router.post('/', requireAdmin, (req, res) => {
   const { period_number, start_date, end_date, label } = req.body;
   if (!period_number || !start_date || !end_date) {
     return res.status(400).json({ error: 'period_number, start_date, and end_date required' });
@@ -22,7 +22,7 @@ router.post('/', (req, res) => {
   res.status(201).json(db.prepare('SELECT * FROM pay_periods WHERE id = ?').get(result.lastInsertRowid));
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', requireAdmin, (req, res) => {
   const db = getDb();
   const period = db.prepare('SELECT * FROM pay_periods WHERE id = ?').get(req.params.id);
   if (!period) return res.status(404).json({ error: 'Pay period not found' });
@@ -49,7 +49,7 @@ router.get('/for-date', (req, res) => {
   res.json(period || null);
 });
 
-router.post('/generate', (req, res) => {
+router.post('/generate', requireAdmin, (req, res) => {
   const year = parseInt(req.body.year);
   if (!year || year < 2000 || year > 2100) {
     return res.status(400).json({ error: 'Valid year required (2000–2100)' });
@@ -85,7 +85,7 @@ router.post('/generate', (req, res) => {
   res.status(201).json(created);
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requireAdmin, (req, res) => {
   const db = getDb();
   const period = db.prepare('SELECT * FROM pay_periods WHERE id = ?').get(req.params.id);
   if (!period) return res.status(404).json({ error: 'Pay period not found' });
