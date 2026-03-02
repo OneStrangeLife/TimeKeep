@@ -53,6 +53,7 @@ export const api = {
   createTimeEntry: (data) => request('POST', '/time-entries', data),
   updateTimeEntry: (id, data) => request('PUT', `/time-entries/${id}`, data),
   deleteTimeEntry: (id) => request('DELETE', `/time-entries/${id}`),
+  purgeTimeEntries: (params) => request('POST', '/time-entries/purge', params),
 
   // Date history
   getDateHistory: () => request('GET', '/time-entries/history'),

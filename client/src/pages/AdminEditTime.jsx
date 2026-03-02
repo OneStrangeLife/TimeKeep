@@ -35,6 +35,12 @@ export default function AdminEditTime() {
   const [payPeriod, setPayPeriod] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [purgeOpen, setPurgeOpen] = useState(false);
+  const [purgeUser, setPurgeUser] = useState('all');
+  const [purgeStart, setPurgeStart] = useState('');
+  const [purgeEnd, setPurgeEnd] = useState('');
+  const [purging, setPurging] = useState(false);
+  const [purgeConfirm, setPurgeConfirm] = useState('');
 
   useEffect(() => {
     api.getUsers().then(setUsers).catch(e => setError(e.message));
@@ -122,6 +128,32 @@ export default function AdminEditTime() {
       setEntries(prev => prev.filter(e => e.id !== row.id));
     } catch (e) {
       setError(e.message);
+    }
+  }
+
+  async function handlePurge() {
+    if (purgeConfirm !== 'PURGE') return;
+    setError('');
+    setPurging(true);
+    try {
+      const params = {};
+      if (purgeUser && purgeUser !== 'all') params.user_id = Number(purgeUser);
+      if (purgeStart) params.start_date = purgeStart;
+      if (purgeEnd) params.end_date = purgeEnd;
+      const { deleted } = await api.purgeTimeEntries(params);
+      setPurgeOpen(false);
+      setPurgeConfirm('');
+      setPurgeStart('');
+      setPurgeEnd('');
+      setPurgeUser('all');
+      const affectedUser = !purgeUser || purgeUser === 'all' || String(purgeUser) === String(userId);
+      const affectedDate = (!purgeStart && !purgeEnd) || (date >= (purgeStart || '0000-01-01') && date <= (purgeEnd || '9999-12-31'));
+      if (userId && affectedUser && affectedDate) loadData();
+      alert(`Purged ${deleted} time entry(ies).`);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setPurging(false);
     }
   }
 
@@ -222,6 +254,75 @@ export default function AdminEditTime() {
 
           <ClientSummary entries={savedEntries} clients={clients} projects={projects} />
         </>
+      )}
+
+      {/* Purge records — always visible when users exist */}
+      {activeUsers.length > 0 && (
+        <div className="mt-8 pt-6 border-t border-slate-600">
+          <button
+            type="button"
+            onClick={() => setPurgeOpen(o => !o)}
+            className="text-sm text-amber-400 hover:text-amber-300 underline"
+          >
+            {purgeOpen ? 'Hide purge options' : 'Purge time entries…'}
+          </button>
+          {purgeOpen && (
+            <div className="mt-4 p-4 bg-slate-800 rounded-xl border border-amber-900/50 max-w-lg">
+              <p className="text-amber-200/90 text-sm mb-3">Permanently delete time entries. Leave dates empty to purge all matching entries.</p>
+              <div className="flex flex-wrap gap-4 items-end mb-4">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">User</label>
+                  <select
+                    value={purgeUser}
+                    onChange={e => setPurgeUser(e.target.value)}
+                    className="border border-slate-600 rounded-lg px-2 py-1 text-sm bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 min-w-[160px]"
+                  >
+                    <option value="all">All users</option>
+                    {activeUsers.map(u => (
+                      <option key={u.id} value={u.id}>{u.display_name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">From date (optional)</label>
+                  <input
+                    type="date"
+                    value={purgeStart}
+                    onChange={e => setPurgeStart(e.target.value)}
+                    className="border border-slate-600 rounded-lg px-2 py-1 text-sm bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">To date (optional)</label>
+                  <input
+                    type="date"
+                    value={purgeEnd}
+                    onChange={e => setPurgeEnd(e.target.value)}
+                    className="border border-slate-600 rounded-lg px-2 py-1 text-sm bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              </div>
+              <div className="mb-3">
+                <label className="block text-xs text-slate-400 mb-1">Type PURGE to confirm</label>
+                <input
+                  type="text"
+                  value={purgeConfirm}
+                  onChange={e => setPurgeConfirm(e.target.value.toUpperCase())}
+                  placeholder="PURGE"
+                  className="border border-slate-600 rounded-lg px-2 py-1 text-sm bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 w-32"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handlePurge}
+                disabled={purging || purgeConfirm !== 'PURGE'}
+                className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm px-4 py-2 rounded-lg transition-colors"
+              >
+                {purging ? 'Purging…' : 'Purge'}
+              </button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

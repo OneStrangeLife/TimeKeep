@@ -1,6 +1,6 @@
 const express = require('express');
 const { getDb } = require('../db/database');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -128,6 +128,33 @@ router.put('/:id', (req, res) => {
     LEFT JOIN projects p ON te.project_id = p.id
     WHERE te.id = ?
   `).get(req.params.id));
+});
+
+// Purge time entries by user and/or date range (admin only)
+router.post('/purge', requireAdmin, (req, res) => {
+  const { user_id: bodyUserId, start_date, end_date } = req.body || {};
+  const db = getDb();
+
+  let conditions = [];
+  const params = [];
+
+  if (bodyUserId != null && bodyUserId !== '' && bodyUserId !== 'all') {
+    conditions.push('user_id = ?');
+    params.push(bodyUserId);
+  }
+  if (start_date) {
+    conditions.push('entry_date >= ?');
+    params.push(start_date);
+  }
+  if (end_date) {
+    conditions.push('entry_date <= ?');
+    params.push(end_date);
+  }
+
+  const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+  const stmt = db.prepare(`DELETE FROM time_entries ${where}`);
+  const info = stmt.run(...params);
+  res.json({ deleted: info.changes });
 });
 
 router.delete('/:id', (req, res) => {
