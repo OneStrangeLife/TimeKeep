@@ -137,6 +137,10 @@ export default function About() {
           </button>
         </form>
       </div>
+
+      <p className="mt-8 text-center text-slate-400 text-xs">
+        © 2026 OneStrangeLife/Rodney - All rights reserved
+      </p>
     </div>
   );
 }
