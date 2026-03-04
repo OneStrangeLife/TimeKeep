@@ -104,4 +104,15 @@ export const api = {
   getEodEmailSettings: () => request('GET', '/eod/email-settings'),
   saveEodEmailSettings: (data) => request('PUT', '/eod/email-settings', data),
   sendEod: (date) => request('POST', '/eod/send', date ? { date } : {}),
+
+  // Completes (Issue #13)
+  getCompletes: () => request('GET', '/completes'),
+  createCompletesCampaign: (name) => request('POST', '/completes', { name }),
+  updateCompletesCampaign: (id, data) => request('PUT', `/completes/${id}`, data),
+  deleteCompletesCampaign: (id) => request('DELETE', `/completes/${id}`),
+  addComplete: (id, amount = 1) => request('POST', `/completes/${id}/add`, { amount }),
+  subtractComplete: (id) => request('POST', `/completes/${id}/subtract`),
+  resetCompletesCounts: () => request('POST', '/completes/reset-counts'),
+  resetCompletesAll: () => request('POST', '/completes/reset-all'),
+  reorderCompletes: (order) => request('PUT', '/completes/reorder', { order }),
 };

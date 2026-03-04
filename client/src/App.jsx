@@ -11,6 +11,7 @@ import Links from './pages/Links.jsx';
 import Scripts from './pages/Scripts.jsx';
 import TeleprompterPopup from './pages/TeleprompterPopup.jsx';
 import AdminEditTime from './pages/AdminEditTime.jsx';
+import CompletesPage from './pages/CompletesPage.jsx';
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
@@ -45,6 +46,7 @@ function AppRoutes() {
           <Route path="/scripts" element={<RequireAuth><Scripts /></RequireAuth>} />
           <Route path="/admin/edit-time" element={<RequireAdmin><AdminEditTime /></RequireAdmin>} />
           <Route path="/teleprompter/:id" element={<RequireAuth><TeleprompterPopup /></RequireAuth>} />
+          <Route path="/completes" element={<RequireAuth><CompletesPage /></RequireAuth>} />
           <Route path="/about" element={<RequireAuth><About /></RequireAuth>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

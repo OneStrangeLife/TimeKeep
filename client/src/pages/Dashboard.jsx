@@ -3,6 +3,7 @@ import { api } from '../api/client.js';
 import TimeRow from '../components/TimeRow.jsx';
 import ClientSummary from '../components/ClientSummary.jsx';
 import DateHistorySidebar from '../components/DateHistorySidebar.jsx';
+import CompletesPanel from '../components/CompletesPanel.jsx';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -138,8 +139,8 @@ export default function Dashboard() {
   const savedEntries = entries.filter(e => !e._isNew);
 
   return (
-    <div className="max-w-7xl mx-auto p-4">
-      <div className="flex gap-4 items-start">
+    <div className="max-w-7xl mx-auto p-4 w-full">
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
         <DateHistorySidebar
           ref={sidebarRef}
           selectedDate={date}
@@ -220,6 +221,10 @@ export default function Dashboard() {
               </button>
 
               <ClientSummary entries={savedEntries} clients={clients} projects={projects} />
+
+              <div className="mt-6 w-full">
+                <CompletesPanel showPopOutButton={true} fullWidth={true} />
+              </div>
             </>
           )}
         </div>

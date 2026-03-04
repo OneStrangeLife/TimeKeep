@@ -16,6 +16,7 @@ const userRoutes = require('./routes/users');
 const linkRoutes = require('./routes/links');
 const scriptRoutes = require('./routes/scripts');
 const eodRoutes = require('./routes/eod');
+const completesRoutes = require('./routes/completes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -35,6 +36,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/links', linkRoutes);
 app.use('/api/scripts', scriptRoutes);
 app.use('/api/eod', eodRoutes);
+app.use('/api/completes', completesRoutes);
 
 // Serve built React app in production
 const publicDir = path.join(__dirname, 'public');
