@@ -34,6 +34,7 @@ export default function Dashboard() {
   const [payPeriod, setPayPeriod] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sendingEod, setSendingEod] = useState(false);
   const sidebarRef = useRef(null);
 
   useEffect(() => {
@@ -116,6 +117,24 @@ export default function Dashboard() {
     }
   }
 
+  async function handleSendEod() {
+    if (!entries.some(e => !e._isNew)) {
+      setError('Save at least one entry before sending EOD.');
+      return;
+    }
+    setError('');
+    setSendingEod(true);
+    try {
+      await api.sendEod(date);
+      setError('');
+      alert('EOD report sent.');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSendingEod(false);
+    }
+  }
+
   const savedEntries = entries.filter(e => !e._isNew);
 
   return (
@@ -141,6 +160,13 @@ export default function Dashboard() {
               : <span className="text-xs text-slate-500 italic">No pay period</span>
             }
             <button onClick={loadData} className="text-sm text-emerald-400 hover:text-emerald-300 underline">Refresh</button>
+            <button
+              onClick={handleSendEod}
+              disabled={sendingEod || !entries.some(e => !e._isNew)}
+              className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-sm px-3 py-1.5 rounded-lg transition-colors"
+            >
+              {sendingEod ? 'Sending…' : 'Send EOD'}
+            </button>
           </div>
 
           {error && <p className="text-red-400 mb-3 text-sm">{error}</p>}

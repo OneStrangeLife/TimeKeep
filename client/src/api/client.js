@@ -92,4 +92,14 @@ export const api = {
   exportCsvUrl: (params) => `${BASE}/reports/export/csv?${new URLSearchParams(params)}&token=${getToken()}`,
   exportExcelUrl: (params) => `${BASE}/reports/export/excel?${new URLSearchParams(params)}&token=${getToken()}`,
   exportPrintUrl: (params) => `${BASE}/reports/export/print?${new URLSearchParams(params)}&token=${getToken()}`,
+
+  // EOD (End of Day) email
+  getEodFormats: () => request('GET', '/eod/formats'),
+  getEodFormatsAll: () => request('GET', '/eod/formats/all'),
+  createEodFormat: (data) => request('POST', '/eod/formats', data),
+  updateEodFormat: (id, data) => request('PUT', `/eod/formats/${id}`, data),
+  deleteEodFormat: (id) => request('DELETE', `/eod/formats/${id}`),
+  getEodClientTypes: () => request('GET', '/eod/client-types'),
+  saveEodClientTypes: (mappings) => request('PUT', '/eod/client-types', { mappings }),
+  sendEod: (date) => request('POST', '/eod/send', date ? { date } : {}),
 };

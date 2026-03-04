@@ -45,7 +45,22 @@ export default function Setup() {
   const [newUser, setNewUser] = useState({ username: '', display_name: '', password: '', is_admin: false });
   const [resetPw, setResetPw] = useState({ userId: null, password: '' });
 
-  useEffect(() => { loadClients(); loadPayPeriods(); if (currentUser?.is_admin) loadUsers(); }, []);
+  // EOD state (admin only)
+  const [eodFormats, setEodFormats] = useState([]);
+  const [eodClientTypes, setEodClientTypes] = useState([]);
+  const [editingEodFormat, setEditingEodFormat] = useState(null);
+  const [newEodFormat, setNewEodFormat] = useState({ name: '', type: 'daytime', to_addresses: '', cc_addresses: '', subject_template: 'EOD {{d}}/{{m}}', body_template: 'Campaign: {{Campaign}}\nHours: {{Hours}}\nCompletes: {{Completes}}\nDate: {{Date}}\n\nThanks,\n', sort_order: 0 });
+  const [eodClientMapping, setEodClientMapping] = useState({});
+
+  useEffect(() => {
+    loadClients();
+    loadPayPeriods();
+    if (currentUser?.is_admin) {
+      loadUsers();
+      loadEodFormats();
+      loadEodClientTypes();
+    }
+  }, [currentUser?.is_admin]);
   useEffect(() => { if (selectedClient) loadProjects(selectedClient.id); else setProjects([]); }, [selectedClient]);
 
   async function loadClients() {
@@ -67,6 +82,62 @@ export default function Setup() {
       const data = await api.getPayPeriods();
       setPayPeriods(data);
     } catch (e) { setError(e.message); }
+  }
+
+  async function loadEodFormats() {
+    try {
+      const data = await api.getEodFormatsAll();
+      setEodFormats(data);
+    } catch (e) { setError(e.message); }
+  }
+
+  async function loadEodClientTypes() {
+    try {
+      const data = await api.getEodClientTypes();
+      setEodClientTypes(data);
+      const map = {};
+      data.forEach(r => { map[r.client_id] = r.eod_type; });
+      setEodClientMapping(map);
+    } catch (e) { setError(e.message); }
+  }
+
+  async function saveEodFormat(ev) {
+    if (ev && ev.preventDefault) ev.preventDefault();
+    if (editingEodFormat) {
+      try {
+        await api.updateEodFormat(editingEodFormat.id, editingEodFormat);
+        setEditingEodFormat(null);
+        loadEodFormats();
+      } catch (err) { setError(err.message); }
+    }
+  }
+
+  async function addEodFormat(e) {
+    e.preventDefault();
+    if (!newEodFormat.name.trim() || !newEodFormat.to_addresses.trim() || !newEodFormat.subject_template.trim() || !newEodFormat.body_template.trim()) return;
+    try {
+      await api.createEodFormat(newEodFormat);
+      setNewEodFormat({ name: '', type: 'daytime', to_addresses: '', cc_addresses: '', subject_template: 'EOD {{d}}/{{m}}', body_template: 'Campaign: {{Campaign}}\nHours: {{Hours}}\nCompletes: {{Completes}}\nDate: {{Date}}\n\nThanks,\n', sort_order: 0 });
+      loadEodFormats();
+    } catch (err) { setError(err.message); }
+  }
+
+  async function deleteEodFormat(id) {
+    try {
+      await api.deleteEodFormat(id);
+      loadEodFormats();
+    } catch (err) { setError(err.message); }
+  }
+
+  async function saveEodClientTypes() {
+    const mappings = clients.filter(c => c.active).map(c => ({
+      client_id: c.id,
+      eod_type: eodClientMapping[c.id] || '',
+    })).filter(m => m.eod_type);
+    try {
+      await api.saveEodClientTypes(mappings);
+      loadEodClientTypes();
+    } catch (err) { setError(err.message); }
   }
 
   async function addClient(e) {
@@ -415,6 +486,131 @@ export default function Setup() {
           </button>
         </form>
       </div>
+      )}
+
+      {/* EOD Email Formats — admin only */}
+      {currentUser?.is_admin && (
+        <div className="mt-6 bg-slate-700 rounded-xl shadow border border-slate-600 p-4">
+          <h2 className="text-lg font-semibold mb-3 text-white">EOD Email Formats</h2>
+          <p className="text-slate-400 text-sm mb-3">Templates for End of Day emails. Types: vici, cmg, reach, reach_and_vici, daytime. Placeholders: {`{{Campaign}} {{Hours}} {{Completes}} {{Date}} {{UserName}} {{d}} {{m}}. For reach_and_vici use {{ReachBlock}} and {{ViciBlock}}.`}</p>
+          <div className="overflow-x-auto mb-4">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="bg-slate-800 text-slate-400 text-xs uppercase">
+                  <th className="px-3 py-2 text-left">Name</th>
+                  <th className="px-3 py-2 text-left">Type</th>
+                  <th className="px-3 py-2 text-left">To</th>
+                  <th className="px-3 py-2 text-left">Cc</th>
+                  <th className="px-3 py-2 text-left">Subject</th>
+                  <th className="px-3 py-2 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-600">
+                {eodFormats.map(f => (
+                  <tr key={f.id} className="text-slate-200">
+                    {editingEodFormat?.id === f.id ? (
+                      <>
+                        <td className="px-3 py-2"><input className={`${inputSmCls} w-24`} value={editingEodFormat.name} onChange={e => setEditingEodFormat({ ...editingEodFormat, name: e.target.value })} /></td>
+                        <td className="px-3 py-2">
+                          <select className={inputSmCls} value={editingEodFormat.type} onChange={e => setEditingEodFormat({ ...editingEodFormat, type: e.target.value })}>
+                            {['vici', 'cmg', 'reach', 'reach_and_vici', 'daytime'].map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </td>
+                        <td className="px-3 py-2"><input className={`${inputSmCls} w-40`} value={editingEodFormat.to_addresses} onChange={e => setEditingEodFormat({ ...editingEodFormat, to_addresses: e.target.value })} /></td>
+                        <td className="px-3 py-2"><input className={`${inputSmCls} w-32`} value={editingEodFormat.cc_addresses || ''} onChange={e => setEditingEodFormat({ ...editingEodFormat, cc_addresses: e.target.value })} /></td>
+                        <td className="px-3 py-2"><input className={`${inputSmCls} w-28`} value={editingEodFormat.subject_template} onChange={e => setEditingEodFormat({ ...editingEodFormat, subject_template: e.target.value })} /></td>
+                        <td className="px-3 py-2">
+                          <button type="button" onClick={saveEodFormat} className="text-xs text-emerald-400 underline mr-2">Save</button>
+                          <button type="button" onClick={() => setEditingEodFormat(null)} className="text-xs text-slate-400 underline">Cancel</button>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-3 py-2">{f.name}</td>
+                        <td className="px-3 py-2 font-mono text-slate-400">{f.type}</td>
+                        <td className="px-3 py-2 text-slate-300">{f.to_addresses}</td>
+                        <td className="px-3 py-2 text-slate-400">{f.cc_addresses || '—'}</td>
+                        <td className="px-3 py-2 text-slate-300 truncate max-w-[120px]">{f.subject_template}</td>
+                        <td className="px-3 py-2">
+                          <button type="button" onClick={() => setEditingEodFormat({ ...f })} className="text-xs text-emerald-400 underline mr-2">Edit</button>
+                          <ConfirmButton label="Delete" onConfirm={() => deleteEodFormat(f.id)} />
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <form onSubmit={addEodFormat} className="flex flex-wrap gap-2 items-end border-t border-slate-600 pt-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">Name</label>
+              <input className={`${inputSmCls} w-28`} value={newEodFormat.name} onChange={e => setNewEodFormat({ ...newEodFormat, name: e.target.value })} placeholder="VICI" required />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">Type</label>
+              <select className={inputSmCls} value={newEodFormat.type} onChange={e => setNewEodFormat({ ...newEodFormat, type: e.target.value })}>
+                {['vici', 'cmg', 'reach', 'reach_and_vici', 'daytime'].map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">To</label>
+              <input className={`${inputSmCls} w-40`} value={newEodFormat.to_addresses} onChange={e => setNewEodFormat({ ...newEodFormat, to_addresses: e.target.value })} placeholder="email@example.com" required />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">Cc</label>
+              <input className={`${inputSmCls} w-36`} value={newEodFormat.cc_addresses} onChange={e => setNewEodFormat({ ...newEodFormat, cc_addresses: e.target.value })} placeholder="optional" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">Subject</label>
+              <input className={`${inputSmCls} w-32`} value={newEodFormat.subject_template} onChange={e => setNewEodFormat({ ...newEodFormat, subject_template: e.target.value })} placeholder="EOD {{d}}/{{m}}" required />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">Body</label>
+              <textarea className={`${inputSmCls} w-64 h-20`} value={newEodFormat.body_template} onChange={e => setNewEodFormat({ ...newEodFormat, body_template: e.target.value })} required />
+            </div>
+            <button type="submit" className="bg-emerald-500 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-emerald-600 transition-colors">Add Format</button>
+          </form>
+        </div>
+      )}
+
+      {/* EOD Client Mapping — admin only */}
+      {currentUser?.is_admin && (
+        <div className="mt-6 bg-slate-700 rounded-xl shadow border border-slate-600 p-4">
+          <h2 className="text-lg font-semibold mb-3 text-white">EOD Client Mapping</h2>
+          <p className="text-slate-400 text-sm mb-3">Assign each client to an EOD type so the correct email format is used when sending EOD.</p>
+          <div className="overflow-x-auto mb-3">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="bg-slate-800 text-slate-400 text-xs uppercase">
+                  <th className="px-3 py-2 text-left">Client</th>
+                  <th className="px-3 py-2 text-left">EOD Type</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-600">
+                {clients.filter(c => c.active).map(c => (
+                  <tr key={c.id} className="text-slate-200">
+                    <td className="px-3 py-2">{c.name}</td>
+                    <td className="px-3 py-2">
+                      <select
+                        className={inputSmCls}
+                        value={eodClientMapping[c.id] || ''}
+                        onChange={e => setEodClientMapping(prev => ({ ...prev, [c.id]: e.target.value }))}
+                      >
+                        <option value="">— None —</option>
+                        <option value="vici">vici</option>
+                        <option value="cmg">cmg</option>
+                        <option value="reach">reach</option>
+                        <option value="daytime">daytime</option>
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button type="button" onClick={saveEodClientTypes} className="bg-emerald-500 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-emerald-600 transition-colors">Save Client Mapping</button>
+        </div>
       )}
 
       {/* Users panel — admin only */}

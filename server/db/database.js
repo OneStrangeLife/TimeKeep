@@ -23,6 +23,28 @@ function runMigrations(db) {
     db.exec('ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
     console.log('Migration: added users.active column');
   }
+  if (!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='eod_formats'").get()) {
+    db.exec(`
+      CREATE TABLE eod_formats (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        to_addresses TEXT NOT NULL,
+        cc_addresses TEXT,
+        subject_template TEXT NOT NULL,
+        body_template TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE TABLE eod_client_types (
+        client_id INTEGER NOT NULL PRIMARY KEY REFERENCES clients(id) ON DELETE CASCADE,
+        eod_type TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+    console.log('Migration: added eod_formats and eod_client_types');
+  }
 }
 
 function seedLinks(db) {
