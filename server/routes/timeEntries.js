@@ -22,7 +22,7 @@ router.get('/history', (req, res) => {
   const rows = db.prepare(`
     SELECT entry_date, COUNT(*) as entry_count, SUM(duration_hours) as total_hours
     FROM time_entries
-    WHERE user_id = ? AND entry_date >= date('now', '-30 days')
+    WHERE user_id = ? AND entry_date >= date('now', '-90 days')
     GROUP BY entry_date
     ORDER BY entry_date DESC
   `).all(targetUser);
