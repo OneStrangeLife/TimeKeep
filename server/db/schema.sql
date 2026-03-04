@@ -88,3 +88,16 @@ CREATE TABLE IF NOT EXISTS eod_client_types (
   eod_type TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Single-row config for EOD email server and user (admin-editable in Setup)
+CREATE TABLE IF NOT EXISTS eod_email_settings (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  smtp_host TEXT,
+  smtp_port INTEGER,
+  smtp_secure INTEGER NOT NULL DEFAULT 0,
+  smtp_user TEXT,
+  smtp_pass TEXT,
+  eod_from TEXT,
+  updated_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

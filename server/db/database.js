@@ -45,6 +45,26 @@ function runMigrations(db) {
     `);
     console.log('Migration: added eod_formats and eod_client_types');
   }
+  if (!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='eod_email_settings'").get()) {
+    db.exec(`
+      CREATE TABLE eod_email_settings (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        smtp_host TEXT,
+        smtp_port INTEGER,
+        smtp_secure INTEGER NOT NULL DEFAULT 0,
+        smtp_user TEXT,
+        smtp_pass TEXT,
+        eod_from TEXT,
+        updated_at TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT INTO eod_email_settings (id) VALUES (1);
+    `);
+    console.log('Migration: added eod_email_settings');
+  } else if (!db.prepare('SELECT id FROM eod_email_settings WHERE id = 1').get()) {
+    db.prepare('INSERT INTO eod_email_settings (id) VALUES (1)').run();
+    console.log('Migration: seeded eod_email_settings row');
+  }
 }
 
 function seedLinks(db) {

@@ -48,6 +48,16 @@ app.get('*', (req, res) => {
 
 initDb();
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`TimeKeep server running on http://localhost:${PORT}`);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Stop the other process using it, or set PORT to a different value (e.g. PORT=3002 npm run dev).`);
+    console.error('To find and kill the process: lsof -i :' + PORT + ' then kill <PID>');
+  } else {
+    console.error('Server error:', err);
+  }
+  process.exit(1);
 });

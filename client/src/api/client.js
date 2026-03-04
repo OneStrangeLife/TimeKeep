@@ -101,5 +101,7 @@ export const api = {
   deleteEodFormat: (id) => request('DELETE', `/eod/formats/${id}`),
   getEodClientTypes: () => request('GET', '/eod/client-types'),
   saveEodClientTypes: (mappings) => request('PUT', '/eod/client-types', { mappings }),
+  getEodEmailSettings: () => request('GET', '/eod/email-settings'),
+  saveEodEmailSettings: (data) => request('PUT', '/eod/email-settings', data),
   sendEod: (date) => request('POST', '/eod/send', date ? { date } : {}),
 };

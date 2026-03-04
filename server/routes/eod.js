@@ -125,17 +125,81 @@ router.put('/client-types', requireAdmin, (req, res) => {
   res.json(db.prepare('SELECT * FROM eod_client_types').all());
 });
 
+// ---------- EOD Email Server/User settings (Issue #12) ----------
+function getEodEmailConfig() {
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM eod_email_settings WHERE id = 1').get();
+  return {
+    smtp_host: row?.smtp_host || process.env.SMTP_HOST,
+    smtp_port: row?.smtp_port != null ? row.smtp_port : (process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587),
+    smtp_secure: row ? !!row.smtp_secure : process.env.SMTP_SECURE === 'true',
+    smtp_user: row?.smtp_user || process.env.SMTP_USER,
+    smtp_pass: row?.smtp_pass || process.env.SMTP_PASS,
+    eod_from: row?.eod_from || process.env.EOD_FROM || process.env.SMTP_USER,
+  };
+}
+
+router.get('/email-settings', requireAdmin, (req, res) => {
+  const db = getDb();
+  let row = db.prepare('SELECT * FROM eod_email_settings WHERE id = 1').get();
+  if (!row) {
+    db.prepare('INSERT INTO eod_email_settings (id) VALUES (1)').run();
+    row = db.prepare('SELECT * FROM eod_email_settings WHERE id = 1').get();
+  }
+  res.json({
+    smtp_host: row.smtp_host || '',
+    smtp_port: row.smtp_port != null ? row.smtp_port : '',
+    smtp_secure: row.smtp_secure ? 1 : 0,
+    smtp_user: row.smtp_user || '',
+    smtp_pass: '', // never return stored password
+    eod_from: row.eod_from || '',
+  });
+});
+
+router.put('/email-settings', requireAdmin, (req, res) => {
+  const { smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, eod_from } = req.body || {};
+  const db = getDb();
+  let row = db.prepare('SELECT * FROM eod_email_settings WHERE id = 1').get();
+  if (!row) {
+    db.prepare('INSERT INTO eod_email_settings (id) VALUES (1)').run();
+    row = db.prepare('SELECT * FROM eod_email_settings WHERE id = 1').get();
+  }
+  const updates = {
+    smtp_host: smtp_host !== undefined ? (smtp_host && String(smtp_host).trim()) || null : row.smtp_host,
+    smtp_port: smtp_port !== undefined && smtp_port !== '' ? Number(smtp_port) : (row.smtp_port ?? null),
+    smtp_secure: smtp_secure !== undefined ? (smtp_secure ? 1 : 0) : row.smtp_secure,
+    smtp_user: smtp_user !== undefined ? (smtp_user && String(smtp_user).trim()) || null : row.smtp_user,
+    eod_from: eod_from !== undefined ? (eod_from && String(eod_from).trim()) || null : row.eod_from,
+  };
+  if (smtp_pass !== undefined && smtp_pass !== '') {
+    db.prepare(
+      'UPDATE eod_email_settings SET smtp_host=?, smtp_port=?, smtp_secure=?, smtp_user=?, smtp_pass=?, eod_from=?, updated_at=datetime(\'now\') WHERE id=1'
+    ).run(updates.smtp_host, updates.smtp_port, updates.smtp_secure, updates.smtp_user, String(smtp_pass).trim(), updates.eod_from);
+  } else {
+    db.prepare(
+      'UPDATE eod_email_settings SET smtp_host=?, smtp_port=?, smtp_secure=?, smtp_user=?, eod_from=?, updated_at=datetime(\'now\') WHERE id=1'
+    ).run(updates.smtp_host, updates.smtp_port, updates.smtp_secure, updates.smtp_user, updates.eod_from);
+  }
+  const updated = db.prepare('SELECT * FROM eod_email_settings WHERE id = 1').get();
+  res.json({
+    smtp_host: updated.smtp_host || '',
+    smtp_port: updated.smtp_port != null ? updated.smtp_port : '',
+    smtp_secure: updated.smtp_secure ? 1 : 0,
+    smtp_user: updated.smtp_user || '',
+    smtp_pass: '',
+    eod_from: updated.eod_from || '',
+  });
+});
+
 // ---------- Send EOD ----------
-function getTransporter() {
-  const host = process.env.SMTP_HOST;
-  const port = process.env.SMTP_PORT;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+function getTransporter(config) {
+  config = config || getEodEmailConfig();
+  const { smtp_host: host, smtp_port: port, smtp_secure: secure, smtp_user: user, smtp_pass: pass } = config;
   if (!host || !user || !pass) return null;
   return nodemailer.createTransport({
     host,
-    port: port ? Number(port) : 587,
-    secure: process.env.SMTP_SECURE === 'true',
+    port: port || 587,
+    secure: !!secure,
     auth: { user, pass },
   });
 }
@@ -213,12 +277,13 @@ router.post('/send', async (req, res) => {
     return res.status(400).json({ error: `No EOD format configured for type: ${formatType}. Add one in Setup.` });
   }
 
-  const transporter = getTransporter();
+  const emailConfig = getEodEmailConfig();
+  const transporter = getTransporter(emailConfig);
   if (!transporter) {
-    return res.status(503).json({ error: 'Email not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS in environment.' });
+    return res.status(503).json({ error: 'Email not configured. Set SMTP server and user in Setup → EOD Email Server, or set SMTP_HOST, SMTP_USER, SMTP_PASS in environment.' });
   }
 
-  const from = process.env.EOD_FROM || process.env.SMTP_USER;
+  const from = emailConfig.eod_from || emailConfig.smtp_user;
   const dateObj = new Date(date + 'T12:00:00');
   const d = dateObj.getDate();
   const m = dateObj.getMonth() + 1;

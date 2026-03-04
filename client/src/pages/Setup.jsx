@@ -4,16 +4,21 @@ import { useAuth } from '../context/AuthContext.jsx';
 
 function ConfirmButton({ onConfirm, label = 'Deactivate', className = '' }) {
   const [confirming, setConfirming] = useState(false);
+  const handleConfirm = () => {
+    const result = onConfirm();
+    if (result && typeof result.then === 'function') result.then(() => setConfirming(false)).catch(() => setConfirming(false));
+    else setConfirming(false);
+  };
   if (confirming) {
     return (
       <span className="flex gap-1">
-        <button onClick={onConfirm} className="text-red-400 text-xs underline">Confirm</button>
-        <button onClick={() => setConfirming(false)} className="text-slate-400 text-xs underline">Cancel</button>
+        <button type="button" onClick={handleConfirm} className="text-red-400 text-xs underline hover:text-red-300 cursor-pointer px-1">Confirm</button>
+        <button type="button" onClick={() => setConfirming(false)} className="text-slate-400 text-xs underline hover:text-slate-300 cursor-pointer px-1">Cancel</button>
       </span>
     );
   }
   return (
-    <button onClick={() => setConfirming(true)} className={`text-xs text-red-400 hover:text-red-300 underline ${className}`}>
+    <button type="button" onClick={() => setConfirming(true)} className={`text-xs text-red-400 hover:text-red-300 underline cursor-pointer ${className}`}>
       {label}
     </button>
   );
@@ -51,6 +56,9 @@ export default function Setup() {
   const [editingEodFormat, setEditingEodFormat] = useState(null);
   const [newEodFormat, setNewEodFormat] = useState({ name: '', type: 'daytime', to_addresses: '', cc_addresses: '', subject_template: 'EOD {{d}}/{{m}}', body_template: 'Campaign: {{Campaign}}\nHours: {{Hours}}\nCompletes: {{Completes}}\nDate: {{Date}}\n\nThanks,\n', sort_order: 0 });
   const [eodClientMapping, setEodClientMapping] = useState({});
+  const [eodEmailSettings, setEodEmailSettings] = useState({ smtp_host: '', smtp_port: '', smtp_secure: 0, smtp_user: '', smtp_pass: '', eod_from: '' });
+  const [savingEodEmailSettings, setSavingEodEmailSettings] = useState(false);
+  const [deletingEodFormatId, setDeletingEodFormatId] = useState(null);
 
   useEffect(() => {
     loadClients();
@@ -59,6 +67,7 @@ export default function Setup() {
       loadUsers();
       loadEodFormats();
       loadEodClientTypes();
+      loadEodEmailSettings();
     }
   }, [currentUser?.is_admin]);
   useEffect(() => { if (selectedClient) loadProjects(selectedClient.id); else setProjects([]); }, [selectedClient]);
@@ -101,6 +110,38 @@ export default function Setup() {
     } catch (e) { setError(e.message); }
   }
 
+  async function loadEodEmailSettings() {
+    try {
+      const data = await api.getEodEmailSettings();
+      setEodEmailSettings({
+        smtp_host: data.smtp_host || '',
+        smtp_port: data.smtp_port !== undefined && data.smtp_port !== null ? String(data.smtp_port) : '',
+        smtp_secure: data.smtp_secure ? 1 : 0,
+        smtp_user: data.smtp_user || '',
+        smtp_pass: '',
+        eod_from: data.eod_from || '',
+      });
+    } catch (e) { setError(e.message); }
+  }
+
+  async function saveEodEmailSettings(ev) {
+    if (ev && ev.preventDefault) ev.preventDefault();
+    setSavingEodEmailSettings(true);
+    try {
+      await api.saveEodEmailSettings({
+        smtp_host: eodEmailSettings.smtp_host || undefined,
+        smtp_port: eodEmailSettings.smtp_port !== '' ? eodEmailSettings.smtp_port : undefined,
+        smtp_secure: eodEmailSettings.smtp_secure,
+        smtp_user: eodEmailSettings.smtp_user || undefined,
+        smtp_pass: eodEmailSettings.smtp_pass || undefined,
+        eod_from: eodEmailSettings.eod_from || undefined,
+      });
+      setEodEmailSettings(prev => ({ ...prev, smtp_pass: '' }));
+      loadEodEmailSettings();
+    } catch (err) { setError(err.message); }
+    finally { setSavingEodEmailSettings(false); }
+  }
+
   async function saveEodFormat(ev) {
     if (ev && ev.preventDefault) ev.preventDefault();
     if (editingEodFormat) {
@@ -123,10 +164,12 @@ export default function Setup() {
   }
 
   async function deleteEodFormat(id) {
+    setDeletingEodFormatId(id);
     try {
       await api.deleteEodFormat(id);
-      loadEodFormats();
+      await loadEodFormats();
     } catch (err) { setError(err.message); }
+    finally { setDeletingEodFormatId(null); }
   }
 
   async function saveEodClientTypes() {
@@ -488,6 +531,87 @@ export default function Setup() {
       </div>
       )}
 
+      {/* EOD Email Server & User (Issue #12) — admin only */}
+      {currentUser?.is_admin && (
+        <div className="mt-6 bg-slate-700 rounded-xl shadow border border-slate-600 p-4">
+          <h2 className="text-lg font-semibold mb-3 text-white">EOD Email Server & User</h2>
+          <p className="text-slate-400 text-sm mb-3">Configure SMTP server and sender for End of Day emails. Leave blank to use environment variables (SMTP_HOST, SMTP_USER, SMTP_PASS, EOD_FROM).</p>
+          <form onSubmit={saveEodEmailSettings} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-4xl">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">SMTP Host</label>
+              <input
+                className={`${inputSmCls} w-full`}
+                value={eodEmailSettings.smtp_host}
+                onChange={e => setEodEmailSettings({ ...eodEmailSettings, smtp_host: e.target.value })}
+                placeholder="smtp.example.com"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">SMTP Port</label>
+              <input
+                type="number"
+                className={`${inputSmCls} w-full`}
+                value={eodEmailSettings.smtp_port}
+                onChange={e => setEodEmailSettings({ ...eodEmailSettings, smtp_port: e.target.value })}
+                placeholder="587"
+              />
+            </div>
+            <div className="flex flex-col gap-1 sm:col-span-2 lg:col-span-1 justify-end">
+              <label className="flex items-center gap-2 text-slate-300 text-sm">
+                <input
+                  type="checkbox"
+                  checked={!!eodEmailSettings.smtp_secure}
+                  onChange={e => setEodEmailSettings({ ...eodEmailSettings, smtp_secure: e.target.checked ? 1 : 0 })}
+                  className="rounded border-slate-500"
+                />
+                Use TLS (secure)
+              </label>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">SMTP User</label>
+              <input
+                className={`${inputSmCls} w-full`}
+                type="text"
+                autoComplete="off"
+                value={eodEmailSettings.smtp_user}
+                onChange={e => setEodEmailSettings({ ...eodEmailSettings, smtp_user: e.target.value })}
+                placeholder="user@example.com"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">SMTP Password</label>
+              <input
+                className={`${inputSmCls} w-full`}
+                type="password"
+                autoComplete="new-password"
+                value={eodEmailSettings.smtp_pass}
+                onChange={e => setEodEmailSettings({ ...eodEmailSettings, smtp_pass: e.target.value })}
+                placeholder="Leave blank to keep current"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">From Address (EOD)</label>
+              <input
+                className={`${inputSmCls} w-full`}
+                type="text"
+                value={eodEmailSettings.eod_from}
+                onChange={e => setEodEmailSettings({ ...eodEmailSettings, eod_from: e.target.value })}
+                placeholder="timekeep@example.com"
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                type="submit"
+                disabled={savingEodEmailSettings}
+                className="bg-emerald-500 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-50"
+              >
+                {savingEodEmailSettings ? 'Saving…' : 'Save EOD Email Settings'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* EOD Email Formats — admin only */}
       {currentUser?.is_admin && (
         <div className="mt-6 bg-slate-700 rounded-xl shadow border border-slate-600 p-4">
@@ -506,7 +630,7 @@ export default function Setup() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-600">
-                {eodFormats.map(f => (
+                {eodFormats.filter(f => f.active).map(f => (
                   <tr key={f.id} className="text-slate-200">
                     {editingEodFormat?.id === f.id ? (
                       <>
@@ -532,8 +656,14 @@ export default function Setup() {
                         <td className="px-3 py-2 text-slate-400">{f.cc_addresses || '—'}</td>
                         <td className="px-3 py-2 text-slate-300 truncate max-w-[120px]">{f.subject_template}</td>
                         <td className="px-3 py-2">
-                          <button type="button" onClick={() => setEditingEodFormat({ ...f })} className="text-xs text-emerald-400 underline mr-2">Edit</button>
-                          <ConfirmButton label="Delete" onConfirm={() => deleteEodFormat(f.id)} />
+                          {deletingEodFormatId === f.id ? (
+                            <span className="text-slate-400 text-xs">Deleting…</span>
+                          ) : (
+                            <>
+                              <button type="button" onClick={() => setEditingEodFormat({ ...f })} className="text-xs text-emerald-400 underline mr-2">Edit</button>
+                              <ConfirmButton label="Delete" onConfirm={() => deleteEodFormat(f.id)} />
+                            </>
+                          )}
                         </td>
                       </>
                     )}
