@@ -5,12 +5,12 @@ const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 router.use(requireAuth);
 
-// List scripts visible to the current user
+// List scripts visible to the current user.
+// Non-admins only see: scripts added by admin (owner_id IS NULL / public) or by the current user.
 router.get('/', (req, res) => {
   const db = getDb();
 
   if (req.user.is_admin) {
-    // Admins see every active script
     const rows = db.prepare(`
       SELECT s.*, u.display_name as owner_display_name
       FROM scripts s
@@ -21,7 +21,6 @@ router.get('/', (req, res) => {
     return res.json(rows);
   }
 
-  // Regular users see public scripts + their own
   const rows = db.prepare(`
     SELECT s.*, u.display_name as owner_display_name
     FROM scripts s
@@ -79,14 +78,14 @@ router.post('/', (req, res) => {
   res.status(201).json(created);
 });
 
-// Update a script
+// Update a script. Users can edit scripts they own; admins can edit any.
 router.put('/:id', (req, res) => {
   const db = getDb();
   const script = db.prepare('SELECT * FROM scripts WHERE id = ?').get(req.params.id);
   if (!script) return res.status(404).json({ error: 'Script not found' });
 
-  // Authorization: owner or admin
-  if (!req.user.is_admin && script.owner_id !== req.user.id) {
+  const isOwner = script.owner_id === req.user.id;
+  if (!req.user.is_admin && !isOwner) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
@@ -121,13 +120,14 @@ router.put('/:id', (req, res) => {
   res.json(updated);
 });
 
-// Soft-delete a script
+// Soft-delete a script. Users can delete scripts they own; admins can delete any.
 router.delete('/:id', (req, res) => {
   const db = getDb();
   const script = db.prepare('SELECT * FROM scripts WHERE id = ?').get(req.params.id);
   if (!script) return res.status(404).json({ error: 'Script not found' });
 
-  if (!req.user.is_admin && script.owner_id !== req.user.id) {
+  const isOwner = script.owner_id === req.user.id;
+  if (!req.user.is_admin && !isOwner) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 

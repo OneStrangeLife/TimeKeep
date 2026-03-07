@@ -172,7 +172,8 @@ function ScriptCard({ s, canEdit, currentUser, isAdmin, users, editing, setEditi
   );
 }
 
-function Section({ title, items, canEdit, currentUser, isAdmin, users, editing, setEditing, handleSaveEdit, setPlaying, openPopup, handleDelete }) {
+// canEdit: user may edit/delete if they are admin or they own the script (owner_id === currentUser.id).
+function Section({ title, items, currentUser, isAdmin, users, editing, setEditing, handleSaveEdit, setPlaying, openPopup, handleDelete }) {
   if (items.length === 0) return null;
   return (
     <div className="mb-6">
@@ -182,7 +183,7 @@ function Section({ title, items, canEdit, currentUser, isAdmin, users, editing, 
           <ScriptCard
             key={s.id}
             s={s}
-            canEdit={canEdit}
+            canEdit={isAdmin || s.owner_id === currentUser.id}
             currentUser={currentUser}
             isAdmin={isAdmin}
             users={users}
@@ -324,9 +325,9 @@ export default function Scripts() {
         />
       )}
 
-      <Section title="Public Scripts" items={publicScripts} canEdit={user.is_admin} {...shared} />
-      <Section title="My Scripts" items={myScripts} canEdit={true} {...shared} />
-      {user.is_admin && <Section title="Other Users' Scripts" items={otherScripts} canEdit={true} {...shared} />}
+      <Section title="Public Scripts" items={publicScripts} {...shared} />
+      <Section title="My Scripts" items={myScripts} {...shared} />
+      {user.is_admin && <Section title="Other Users' Scripts" items={otherScripts} {...shared} />}
 
       {scripts.length === 0 && !adding && (
         <p className="text-slate-400 text-sm">No scripts yet. Click "+ Add Script" to create one.</p>
