@@ -27,7 +27,7 @@ sudo fail2ban-client status sshd
 
 To see all jails at once with banned IPs:
 ```bash
-  sudo fail2ban-client status | grep "Jail list" | sed 's/.*://;s/,//g' | xargs -n1 sudo fail2ban-client status
+sudo fail2ban-client status | grep "Jail list" | sed 's/.*://;s/,//g' | xargs -n1 sudo fail2ban-client status
 ```
 
 To check the log for ban history:

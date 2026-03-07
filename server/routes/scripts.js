@@ -89,13 +89,18 @@ router.put('/:id', (req, res) => {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
-  // Changing owner_id requires admin
+  // Resolve requested owner; only allow non-admins to keep current ownership (no change).
   let finalOwner = script.owner_id;
   if (req.body.owner_id !== undefined) {
-    if (!req.user.is_admin) {
-      return res.status(403).json({ error: 'Only admins can change script ownership' });
+    const requested = req.body.owner_id === null || req.body.owner_id === '' ? null : Number(req.body.owner_id);
+    if (requested !== script.owner_id) {
+      if (!req.user.is_admin) {
+        return res.status(403).json({ error: 'Only admins can change script ownership' });
+      }
+      finalOwner = requested;
+    } else {
+      finalOwner = script.owner_id; // no change
     }
-    finalOwner = req.body.owner_id === null || req.body.owner_id === '' ? null : Number(req.body.owner_id);
   }
 
   const title = req.body.title?.trim() ?? script.title;
