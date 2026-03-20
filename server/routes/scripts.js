@@ -84,7 +84,8 @@ router.put('/:id', (req, res) => {
   const script = db.prepare('SELECT * FROM scripts WHERE id = ?').get(req.params.id);
   if (!script) return res.status(404).json({ error: 'Script not found' });
 
-  const isOwner = script.owner_id === req.user.id;
+  // Normalize to numbers to avoid false mismatches (DB may return string owner_id).
+  const isOwner = script.owner_id != null && Number(script.owner_id) === Number(req.user.id);
   if (!req.user.is_admin && !isOwner) {
     return res.status(403).json({ error: 'Forbidden' });
   }
@@ -93,7 +94,8 @@ router.put('/:id', (req, res) => {
   let finalOwner = script.owner_id;
   if (req.body.owner_id !== undefined) {
     const requested = req.body.owner_id === null || req.body.owner_id === '' ? null : Number(req.body.owner_id);
-    if (requested !== script.owner_id) {
+    const currentOwner = script.owner_id == null ? null : Number(script.owner_id);
+    if (requested !== currentOwner) {
       if (!req.user.is_admin) {
         return res.status(403).json({ error: 'Only admins can change script ownership' });
       }
